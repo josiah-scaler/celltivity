@@ -1,0 +1,50 @@
+(0008,0005) Specific Character Set              CS: 'ISO_IR 192'
+(0008,0008) Image Type                          CS: ['ORIGINAL', 'PRIMARY']
+(0008,0016) SOP Class UID                       UI: VL Photographic Image Storage
+(0008,0018) SOP Instance UID                    UI: 1.2.826.0.1.3680043.8.1036.20230504082305.6700.14.22
+(0008,0020) Study Date                          DA: '20230504'
+(0008,0021) Series Date                         DA: '20230504'
+(0008,0030) Study Time                          TM: '082305.22402'
+(0008,0031) Series Time                         TM: '082305.23200'
+(0008,0050) Accession Number                    SH: ''
+(0008,0060) Modality                            CS: 'XC'
+(0008,0070) Manufacturer                        LO: 'LLTech'
+(0008,0090) Referring Physician's Name          PN: ''
+(0008,0110) Coding Scheme Identification Sequen SQ: <Sequence, length 1>
+(0008,0201) Timezone Offset From UTC            SH: '-5'
+(0008,1030) Study Description                   LO: '904890773'
+(0008,103E) Series Description                  LO: 'Macro image'
+(0008,1090) Manufacturer's Model Name           LO: 'LCTS Bolero final'
+(0010,0010) Patient's Name                      PN: ''
+(0010,0020) Patient ID                          LO: 'Unknown'
+(0010,0030) Patient's Birth Date                DA: ''
+(0010,0040) Patient's Sex                       CS: ''
+(0018,1000) Device Serial Number                LO: 'Biopsy Scanner 031'
+(0018,1020) Software Versions                   LO: 'Light-CT advanced (1.4.1)'
+(0018,1200) Date of Last Calibration            DA: '20220919'
+(0020,000D) Study Instance UID                  UI: 1.2.826.0.1.3680043.8.1036.20230504082305.6700.14.21
+(0020,000E) Series Instance UID                 UI: 1.2.826.0.1.3680043.8.1036.20230504082305.6700.14.24
+(0020,0010) Study ID                            SH: ''
+(0020,0011) Series Number                       IS: '0'
+(0020,0013) Instance Number                     IS: None
+(0020,0052) Frame of Reference UID              UI: 1.2.826.0.1.3680043.8.1036.20230504082305.6700.14.22
+(0020,1040) Position Reference Indicator        LO: ''
+(0028,0002) Samples per Pixel                   US: 3
+(0028,0004) Photometric Interpretation          CS: 'RGB'
+(0028,0006) Planar Configuration                US: 0
+(0028,0010) Rows                                US: 1944
+(0028,0011) Columns                             US: 2592
+(0028,0030) Pixel Spacing                       DS: [0.01118557, 0.0111857]
+(0028,0100) Bits Allocated                      US: 8
+(0028,0101) Bits Stored                         US: 8
+(0028,0102) High Bit                            US: 7
+(0028,0103) Pixel Representation                US: 0
+(0028,2110) Lossy Image Compression             CS: '00'
+(0040,0512) Container Identifier                LO: 'RLL'
+(0040,0513) Issuer of the Container Identifier  SQ: <Sequence, length 0>
+(0040,0518) Container Type Code Sequence        SQ: <Sequence, length 0>
+(0040,0555) Acquisition Context Sequence        SQ: <Sequence, length 0>
+(0040,0560) Specimen Description Sequence       SQ: <Sequence, length 1>
+(0075,0010) Private Creator                     LO: 'LLTech, Light-CT Viewer group'
+(0075,1003) Private tag data                    LO: 'CB'
+(7FE0,0010) Pixel Data                          OB: Array of 12311368 elements

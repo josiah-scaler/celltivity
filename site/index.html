@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>VG Viewer</title>
+    <style>
+        body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            font-family: Arial, sans-serif;
+        }
+        #directory-panel {
+            width: 250px;
+            background: #1a1a1a;
+            color: #fff;
+            padding: 10px;
+            overflow-y: auto;
+            height: 100vh;
+            border-right: 1px solid #333;
+            flex-shrink: 0;
+        }
+        #viewer-container {
+            flex: 1;
+            height: 100vh;
+            position: relative;
+            display: flex;
+        }
+        #openseadragon1 {
+            flex: 1;
+            position: relative;
+        }
+        #right-panel {
+            width: 250px;
+            background: #1a1a1a;
+            border-left: 1px solid #333;
+            padding: 15px;
+            flex-shrink: 0;
+        }
+
+        /* Directory styles */
+        .search-container {
+            margin-bottom: 10px;
+            padding: 5px;
+        }
+        #directory-search {
+            width: 100%;
+            padding: 5px;
+            background: #333;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 3px;
+        }
+        .directory-tree {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .directory-item {
+            padding: 4px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .directory-item:hover {
+            background: #2a2a2a;
+        }
+        .folder-icon::before {
+            content: "📁";
+        }
+        .folder-open-icon::before {
+            content: "📂";
+        }
+        .file-icon::before {
+            content: "🖼️";
+        }
+        .folder-contents {
+            margin-left: 20px;
+            display: none;
+        }
+        .folder-contents.open {
+            display: block;
+        }
+        .folder-toggle {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+            text-align: center;
+            line-height: 16px;
+            cursor: pointer;
+        }
+
+        /* Control styles */
+        .control-section {
+            margin-bottom: 20px;
+        }
+        .section-title {
+            font-size: 14px;
+            color: #999;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #333;
+        }
+        .control-group {
+            margin-bottom: 15px;
+            color: white;
+        }
+        .control-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 12px;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        input[type="range"] {
+            flex-grow: 1;
+            -webkit-appearance: none;
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: #444;
+            outline: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #2196F3;
+            cursor: pointer;
+        }
+        input[type="number"] {
+            width: 45px;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 3px;
+            padding: 2px 4px;
+            font-size: 12px;
+        }
+        .reset-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+        }
+
+        /* Add new styles for the invert control */
+        .invert-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+        
+        .invert-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: white;
+            font-size: 12px;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 3px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        input[type="checkbox"]:checked {
+            background: #2196F3;
+            border-color: #2196F3;
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            left: 2px;
+            top: -1px;
+        }
+
+
+        /* Add styles for edge enhancement controls */
+        .edge-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+            color: white;
+        }
+
+        .edge-title {
+            font-size: 12px;
+            margin-bottom: 10px;
+        }
+
+        .edge-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .edge-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="radio"] {
+            width: 16px;
+            height: 16px;
+            background: #333;
+            border: 1px solid #444;
+            border-radius: 50%;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            position: relative;
+        }
+
+        input[type="radio"]:checked {
+            border-color: #2196F3;
+        }
+
+        input[type="radio"]:checked::after {
+            content: '';
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: #2196F3;
+            border-radius: 50%;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .edge-option label {
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* Adding Scalebar with default color */
+        .scalebar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            color: white;
+            font-size: 12px;
+            border-radius: 3px;
+            z-index: 1000;
+        }
+
+        .measure-title {
+            font-size: 12px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .measure-section {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #333;
+        }
+
+        .tool-button {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .tool-button.active {
+            background: #f44336;
+        }
+
+        /* Table list view (for demo, will change) */
+        /*.table-list-container {
+            position: absolute;
+            top: 65px;
+            left: 5px;
+            background: rgba(26, 26, 26, 0.9);
+            border-radius: 4px;
+            padding: 10px;
+            z-index: 1000;
+            max-height: 80vh;
+            overflow-y: auto;
+            width: 670px;
+            display: none;
+        }
+        
+        .table-list {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+            font-size: 15px;
+        }
+        
+        .table-list td, .table-list th {
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .table-list td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .table-list td {
+            vertical-align: middle;
+        }*/
+        
+        .table-list-container {
+            position: absolute;
+            top: 65px;
+            left: 5px;
+            background: rgba(26, 26, 26, 0.9);
+            border-radius: 4px;
+            padding: 0; /* Changed from 10px */
+            z-index: 1000;
+            max-height: 80vh;
+            overflow: hidden; /* Changed from overflow-y: auto */
+            width: 670px;
+            display: none;
+        }
+        
+        /* Header styles */
+        .table-header-container {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(26, 26, 26, 1); /* Slightly darker than table background */
+            border-bottom: 2px solid #333;
+            padding: 10px 10px 0 10px;
+        }
+        
+        /* Scrollable body container */
+        .table-body-container {
+            overflow-y: auto;
+            max-height: calc(80vh - 55px); /* Adjust based on header height */
+            padding: 0 10px 10px 10px;
+        }
+        
+        /* Adjust table styles */
+        .table-list {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            color: white;
+            font-size: 15px;
+        }
+        
+        .table-list th {
+            position: relative;
+            padding: 6px;
+            text-align: center;
+            background: rgba(26, 26, 26, 1);
+        }
+        
+        .table-list td {
+            padding: 6px;
+            text-align: center;
+            border-bottom: 1px solid #333;
+        }
+        
+        .table-list tr:hover {
+            background: rgba(33, 150, 243, 0.2);
+            cursor: pointer;
+        }
+        
+        .table-toggle {
+            position: absolute;
+            top: 35px;
+            left: 5px;
+            z-index: 1001;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+
+        .table-header {
+            color: #999;
+            font-weight: bold;
+            border-bottom: 2px solid #333;
+        }
+
+       
+
+        /* Export context menu styles */
+        .custom-context-menu {
+            display: none;
+            position: fixed;
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 5px 0;
+            min-width: 150px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+            z-index: 1100;
+        }
+
+        .context-menu-item {
+            padding: 8px 15px;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .context-menu-item:hover {
+            background: #2196F3;
+        }
+
+        /* Add hover effect to table rows */
+        .table-list tr {
+            transition: background-color 0.2s;
+        }
+
+        .table-list tr:hover {
+            background: rgba(33, 150, 243, 0.2);
+        }
+
+        /* Add selected state for rows */
+        .table-list tr.selected {
+            background: rgba(33, 150, 243, 0.3);
+        }
+
+
+
+        /* Expandable row styling */
+        .expand-button {
+            cursor: pointer;
+            color: #2196F3;
+            margin-right: 10px;
+            display: inline-block;
+            width: 25px;
+            text-align: left;
+            font-weight: bold;
+        }
+        
+        .nested-row {
+            display: none;
+            background: rgba(26, 26, 26, 0.5);
+        }
+        
+        .nested-row.visible {
+            display: table-row;
+        }
+        
+        .parent-row {
+            background: rgba(45, 45, 45, 0.7);
+        }
+        
+        
+        /* Add indentation for nested rows */
+        .nested-row td:first-child {
+            padding-left: 35px !important; /* Add space for indentation */
+        }
+
+        .nested-row td {
+            padding: 8px 6px;
+            border-left: 2px solid rgba(33, 150, 243, 0.2); /* Add subtle vertical line */
+        }
+
+        /* Adjust expand button positioning */
+        .expand-button {
+            cursor: pointer;
+            color: #2196F3;
+            display: inline-block;
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            position: absolute;
+            left: -15px;
+        }
+
+        /* Container for thumbnail and expand button */
+        .thumbnail-container {
+            position: relative;
+            padding-left: 25px; /* Make space for expand button */
+            display: flex;
+            align-items: center;
+        }
+
+        /* Update table cells to support new layout */
+        .table-list td {
+            position: relative;
+        }
+
+        /* Adjust thumbnail size if needed */
+        .table-list td img {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        /* Add subtle connecting lines */
+        .parent-row td {
+            border-bottom: 2px solid rgba(33, 150, 243, 0.2);
+        }
+
+        .nested-row:last-child td {
+            border-bottom: 1px solid #333;
+        }
+        /* END Expandable row styling */
+
+
+        /* Search features */
+        .table-header th {
+            position: relative;
+            padding-bottom: 30px; /* Make room for search input */
+        }
+
+        .column-search {
+            position: absolute;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
+            padding: 4px;
+            background: #333;
+            border: 1px solid #444;
+            color: white;
+            border-radius: 3px;
+            font-size: 12px;
+            width: calc(100% - 5px);
+        }
+
+        .column-search::placeholder {
+            color: #888;
+        }
+        /* End Search features */
+
+    </style>
+</head>
+
+<body>
+    <div id="directory-panel">
+        <div class="search-container">
+            <input type="text" id="directory-search" placeholder="Search files...">
+        </div>
+        <div class="directory-tree">
+            <!-- Directory will be populated here -->
+        </div>
+    </div>
+    <div id="viewer-container">
+
+        <button id="toggle-table" class="table-toggle">Celltivity DB</button>
+
+        <div id="table-list" class="table-list-container">
+            <div class="table-header-container">
+                <table class="table-list table-header-table">
+                    <thead>
+                        <tr class="table-header">
+                            <th>Sample View</th>
+                            <th>
+                                Patient ID
+                                <input type="text" class="column-search" data-column="1" placeholder="Search ...">
+                            </th>
+                            <th>
+                                Date
+                                <input type="text" class="column-search" data-column="2" placeholder="Search ...">
+                            </th>
+                            <th>Session</th>
+                            <th>
+                                Body Part
+                                <input type="text" class="column-search" data-column="4" placeholder="Search ...">
+                            </th>
+                            <th>
+                                Tool
+                                <input type="text" class="column-search" data-column="5" placeholder="Search ...">
+                            </th>
+                            <th>Image</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="table-body-container">
+                <table class="table-list">
+                    <tbody id="table-body">
+                        <!-- Table content will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="openseadragon1"></div>
+        <div id="right-panel">
+            <div class="control-section">
+                <div class="section-title">Image Adjustments</div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Brightness</span>
+                        <span id="brightness-value">100%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="brightness-slider" min="0" max="200" value="100">
+                        <input type="number" id="brightness-number" value="100" min="0" max="200">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="control-label">
+                        <span>Contrast</span>
+                        <span id="contrast-value">100%</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" id="contrast-slider" min="0" max="200" value="100">
+                        <input type="number" id="contrast-number" value="100" min="0" max="200">
+                    </div>
+                </div>

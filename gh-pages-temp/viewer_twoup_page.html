@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>VG Viewer : Compare</title>
+    <style>
+        /* Previous styles remain the same */
+        body {
+            background: #000;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        .viewer-container {
+            display: flex;
+            gap: 5px;
+            width: 100vw;
+            height: 100vh;
+        }
+        #viewer1, #viewer2 {
+            flex: 1;
+            height: 100%;
+        }
+        .controls {
+            position: fixed;
+            top: 40px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 4px 10px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            transform: scale(1.1);
+        }
+        .controls:hover {
+            opacity: 1;
+        }
+        body:hover .controls {
+            opacity: 0.7;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 32px;
+            height: 18px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 18px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(14px);
+        }
+        .label {
+            color: white;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+
+        /* Adding Scalebar with default color */
+        .scalebar {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 8px;
+            color: white;
+            font-size: 12px;
+            border-radius: 3px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <span class="label">Sync</span>
+        <label class="switch">
+            <input type="checkbox" id="syncToggle">  <!-- Removed 'checked' attribute -->
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="viewer-container">
+        <div id="viewer1"></div>
+        <div id="viewer2"></div>
+    </div>
+    <script src="lib/openseadragon.min.js"></script>
+    <script src="lib/openseadragon-scalebar.js"></script>
+
+    <!-- OSDMeasure classes -->
+    <script src="js/OSDMeasure/src/controllers/DexieWrapper.js"></script>
+    <script src="js/OSDMeasure/src/controllers/OSDMeasure.js"></script>
+    <script src="js/OSDMeasure/src/models/Measurement.js"></script>
+    <script src="js/OSDMeasure/src/models/Point.js"></script>
+    <script src="js/OSDMeasure/src/views/ButtonBar.js"></script>
+    <script src="js/OSDMeasure/src/views/MeasurementList.js"></script>
+    <script src="js/OSDMeasure/src/views/MeasurementListItem.js"></script>
+    <script src="js/OSDMeasure/src/views/Menu.js"></script>
+    <script src="js/OSDMeasure/src/views/MenuButton.js"></script>
+    <script src="js/OSDMeasure/src/views/UI.js"></script>
+
+    <!-- Annotation logic -->
+    <script src="js/AnnotationHelper.js"></script>
+    
+    <script>
+
+        // Parse URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const img1Path = urlParams.get('img1');
+        const img2Path = urlParams.get('img2');
+        //settings for both images. Note that settings for second image are default
+        const settings1 = JSON.parse(urlParams.get('settings1') || '{}');
+        const settings2 = JSON.parse(urlParams.get('settings2') || '{}');
+
+        // Edge enhancement levels definition
+        const edgeEnhancementLevels = {
+            none: '',
+            light: 'contrast(120%) url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'edge\'><feConvolveMatrix kernelMatrix=\'0 -1 0 -1 5 -1 0 -1 0\'/></filter></svg>#edge")',
+            medium: 'contrast(140%) url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'edge\'><feConvolveMatrix kernelMatrix=\'0 -1 0 -1 5 -1 0 -1 0\'/></filter></svg>#edge")',
+            heavy: 'contrast(180%) url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'edge\'><feConvolveMatrix kernelMatrix=\'0 -2 0 -2 9 -2 0 -2 0\'/></filter></svg>#edge")'
+        };
+
+
+        // Function to apply image settings
+        function applyImageSettings(viewer, settings) {
+            if (!settings) return;
+
+            const canvas = viewer.element.querySelector('.openseadragon-canvas');
+            if (canvas) {
+                const brightness = settings.brightness || 100;
+                const contrast = settings.contrast || 100;
+                const invert = settings.invert ? 100 : 0;
+                const edgeFilter = edgeEnhancementLevels[settings.edgeFilter || 'none'];
+                
+                canvas.style.filter = `brightness(${brightness}%) contrast(${contrast}%) invert(${invert}%) ${edgeFilter}`;
+            }
+        }
+
+
+        // First viewer
+        const viewer1 = OpenSeadragon({
+            id: "viewer1",
+            prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
+            showNavigator: true,
+            tileSources: img1Path || {
+                type: 'image',
+                url: 'SplashScreenNoBG.png',
+                buildPyramid: false
+            },
+
+            animationTime: 0.5,
+            blendTime: 0.1,
+            constrainDuringPan: true,
+            maxZoomPixelRatio: 2,
+            minZoomImageRatio: 0.5,
+            visibilityRatio: 0.5,
+            zoomPerScroll: 1.2,
+
+            showScalebar: true,
+
+            showSequenceControl: false, //disable usage, use reference strip 
+            preserveViewport: true,
+            useCanvas: true,
+            preventDefaultAction: true
+        });
+
+
+        // Second viewer
+        const viewer2 = OpenSeadragon({
+            id: "viewer2",
+            prefixUrl: "https://openseadragon.github.io/openseadragon/images/",
+            showNavigator: true,
+            tileSources: img2Path || {
+                type: 'image',
+                url: 'SplashScreenNoBG.png',
+                buildPyramid: false
+            },
+
+            animationTime: 0.5,
+            blendTime: 0.1,
+            constrainDuringPan: true,
+            maxZoomPixelRatio: 2,
+            minZoomImageRatio: 0.5,
+            visibilityRatio: 0.5,
+            zoomPerScroll: 1.2,
+
+            showScalebar: true,
+
+            showSequenceControl: false, //disable usage, use reference strip 
+            preserveViewport: true,
+            useCanvas: true,
+            preventDefaultAction: true
+
+        });
+
+        viewer1.scalebar({
+            type: OpenSeadragon.ScalebarType.MICROSCOPY,
+            pixelsPerMeter: 1300000,
+            minWidth: "50px",
+            location: OpenSeadragon.ScalebarLocation.BOTTOM_RIGHT,
+            xOffset: 10,
+            yOffset: 10,
+            stayInsideImage: true,
+            color: "rgb(255, 255, 255)",
+            fontColor: "rgb(255, 255, 255)",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            fontSize: "small",
+            barThickness: 4
+        });
+
+        viewer2.scalebar({
+            type: OpenSeadragon.ScalebarType.MICROSCOPY,
+            pixelsPerMeter: 1300000,
+            minWidth: "50px",
+            location: OpenSeadragon.ScalebarLocation.BOTTOM_RIGHT,
+            xOffset: 10,
+            yOffset: 10,
+            stayInsideImage: true,
+            color: "rgb(255, 255, 255)",
+            fontColor: "rgb(255, 255, 255)",
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            fontSize: "small",
+            barThickness: 4
+        });
+
+        /*
+        //Measurement Tool control
+        let plugin1 = new OSDMeasure(viewer1, {
+            conversionFactor: 0.7, //0.7um per pixel
+            units: "um",
+            measurementColor : "rgba(255,255,0,1)",
+            useBuiltInUI: false
+        });
+
+        let plugin2 = new OSDMeasure(viewer2, {
+            conversionFactor: 0.7, //0.7um per pixel
+            units: "um",
+            measurementColor : "rgba(255,255,0,1)",
+            useBuiltInUI: false
+        });
+
+
+        //Annotation Tool control
+        let annotationHelper1 = new AnnotationHelper(viewer1);
+        let annotationHelper2 = new AnnotationHelper(viewer2);
+        */
+
+
+        // Synchronization flags
+        let isViewer1Updating = false;
+        let isViewer2Updating = false;
+
+        // Handler storage for enabling/disabling sync
+        const handlers = {
+            viewer1: { zoom: null, pan: null, rotate: null },
+            viewer2: { zoom: null, pan: null, rotate: null }
+        };
+
+        function synchronizeViewers(sourceViewer, targetViewer, isSourceUpdating, isTargetUpdating) {
+            const viewerName = sourceViewer === viewer1 ? 'viewer1' : 'viewer2';
+            
+            handlers[viewerName].zoom = function(event) {
+                if (!isSourceUpdating && document.getElementById('syncToggle').checked) {
+                    isTargetUpdating = true;
+                    targetViewer.viewport.zoomTo(sourceViewer.viewport.getZoom());
+                    setTimeout(() => { isTargetUpdating = false; }, 50);
+                }
+            };
+            
+            handlers[viewerName].pan = function(event) {
+                if (!isSourceUpdating && document.getElementById('syncToggle').checked) {
+                    isTargetUpdating = true;
+                    const center = sourceViewer.viewport.getCenter();
+                    targetViewer.viewport.panTo(center);
+                    setTimeout(() => { isTargetUpdating = false; }, 50);
+                }
+            };
+            
+            handlers[viewerName].rotate = function(event) {
+                if (!isSourceUpdating && document.getElementById('syncToggle').checked) {
+                    isTargetUpdating = true;
+                    targetViewer.viewport.setRotation(sourceViewer.viewport.getRotation());
+                    setTimeout(() => { isTargetUpdating = false; }, 50);
+                }
+            };
+
+            sourceViewer.addHandler('zoom', handlers[viewerName].zoom);
+            sourceViewer.addHandler('pan', handlers[viewerName].pan);
+            sourceViewer.addHandler('rotate', handlers[viewerName].rotate);
+        }
+
+        function removeSynchronization(viewer, viewerName) {
+            if (handlers[viewerName].zoom) {
+                viewer.removeHandler('zoom', handlers[viewerName].zoom);
+                viewer.removeHandler('pan', handlers[viewerName].pan);
+                viewer.removeHandler('rotate', handlers[viewerName].rotate);
+            }
+        }
+
+        // Toggle synchronization
+        document.getElementById('syncToggle').addEventListener('change', function(e) {
+            if (e.target.checked) {
+                // When enabling sync, first align views
+                const sourceZoom = viewer1.viewport.getZoom();
+                const sourceCenter = viewer1.viewport.getCenter();
+                viewer2.viewport.zoomTo(sourceZoom);
+                viewer2.viewport.panTo(sourceCenter);
+                
+                // Then enable synchronization
+                synchronizeViewers(viewer1, viewer2, isViewer1Updating, isViewer2Updating);
+                synchronizeViewers(viewer2, viewer1, isViewer2Updating, isViewer1Updating);
+            } else {
+                removeSynchronization(viewer1, 'viewer1');
+                removeSynchronization(viewer2, 'viewer2');
+            }
+        });
+
+        // Initialize viewers without synchronization
+        Promise.all([
+            new Promise(resolve => viewer1.addHandler('open', resolve)),
+            new Promise(resolve => viewer2.addHandler('open', resolve))
+        ]).then(() => {
+            // No initial synchronization - viewers start independent
+            // Apply settings once viewers are ready
+            applyImageSettings(viewer1, settings1);
+            applyImageSettings(viewer2, settings2);
+        });
+    </script>
+</body>
+</html>
