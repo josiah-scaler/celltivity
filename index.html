@@ -576,7 +576,7 @@
     </div>
     <div id="viewer-container">
 
-        <button id="toggle-table" class="table-toggle">Celltivity DB</button>
+        <button id="toggle-table" class="table-toggle">VanGogh Data</button>
 
         <div id="table-list" class="table-list-container">
             <div class="table-header-container">
@@ -644,7 +644,7 @@
             <div class="invert-section">
                 <div class="invert-control">
                     <input type="checkbox" id="invert-checkbox">
-                    <label for="invert-checkbox">"H&E" color</label>
+                    <label for="invert-checkbox">HistoView</label>
                 </div>
             </div>
             
@@ -864,7 +864,7 @@
                 
                 // Initialize directory structure
                 const structure = {
-                    'Celtivity Data': {
+                    'VanGogh Data': {
                         type: 'folder',
                         contents: {}
                     }
@@ -914,16 +914,16 @@
                     const imageName = imageMatch[1];
 
                     // Create date folder if it doesn't exist
-                    if (!structure['Celtivity Data'].contents[date]) {
-                        structure['Celtivity Data'].contents[date] = {
+                    if (!structure['VanGogh Data'].contents[date]) {
+                        structure['VanGogh Data'].contents[date] = {
                             type: 'folder',
                             contents: {}
                         };
                     }
 
                     // Create patient folder if it doesn't exist
-                    if (!structure['Celtivity Data'].contents[date].contents[patientId]) {
-                        structure['Celtivity Data'].contents[date].contents[patientId] = {
+                    if (!structure['VanGogh Data'].contents[date].contents[patientId]) {
+                        structure['VanGogh Data'].contents[date].contents[patientId] = {
                             type: 'folder',
                             contents: {
                                 'OCT': {
@@ -936,15 +936,15 @@
 
                     // Create session folder if it doesn't exist
                     const sessionKey = `session ${session}`;
-                    if (!structure['Celtivity Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey]) {
-                        structure['Celtivity Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey] = {
+                    if (!structure['VanGogh Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey]) {
+                        structure['VanGogh Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey] = {
                             type: 'folder',
                             contents: {}
                         };
                     }
 
                     // Add image file
-                    structure['Celtivity Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey].contents[imageName] = {
+                    structure['VanGogh Data'].contents[date].contents[patientId].contents['OCT'].contents[sessionKey].contents[imageName] = {
                         type: 'file',
                         path: dziPath,
                         bodyPart: bodyPart,
@@ -1488,7 +1488,7 @@
             let data = [];
     
             // Start with Celtivity Data contents (dates are here)
-            const celtivityData = structure['Celtivity Data'].contents;
+            const celtivityData = structure['VanGogh Data'].contents;
             
             // Iterate through dates
             for (const [date, dateContent] of Object.entries(celtivityData)) {
