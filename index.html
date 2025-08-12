@@ -1305,6 +1305,90 @@
             }*/
         }
         
+
+        function exportPngTwoup(rowData) {
+
+            try {
+                // Get the main canvas from viewer
+                const sourceCanvas = viewer.drawer.canvas || viewer.element.querySelector('canvas');
+                if (!sourceCanvas) {
+                    throw new Error('Viewer canvas not found');
+                }
+        
+                // Create export canvas (double width for side-by-side)
+                const exportCanvas = document.createElement('canvas');
+                const exportCtx = exportCanvas.getContext('2d');
+                
+                const originalWidth = sourceCanvas.width;
+                const originalHeight = sourceCanvas.height;
+                
+                // Set export canvas to double width
+                exportCanvas.width = originalWidth * 2;
+                exportCanvas.height = originalHeight;
+        
+                // Fill with black background
+                exportCtx.fillStyle = '#000000';
+                exportCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+        
+                // Draw original image on the left side
+                exportCtx.drawImage(sourceCanvas, 0, 0, originalWidth, originalHeight);
+        
+                // Get image data for inversion
+                const imageData = exportCtx.getImageData(0, 0, originalWidth, originalHeight);
+                const data = imageData.data;
+        
+                // Create inverted image data
+                const invertedImageData = exportCtx.createImageData(originalWidth, originalHeight);
+                const invertedData = invertedImageData.data;
+        
+                for (let i = 0; i < data.length; i += 4) {
+                    // Invert RGB channels, keep alpha
+                    invertedData[i] = 255 - data[i];         // Red
+                    invertedData[i + 1] = 255 - data[i + 1]; // Green
+                    invertedData[i + 2] = 255 - data[i + 2]; // Blue
+                    invertedData[i + 3] = data[i + 3];       // Alpha (unchanged)
+                }
+        
+                // Draw inverted image on the right side
+                exportCtx.putImageData(invertedImageData, originalWidth, 0);
+        
+                // Add labels
+                //addImageLabels(exportCtx, originalWidth, originalHeight);
+        
+                // Create filename with timestamp
+                const now = new Date();
+                const timestamp = now.getFullYear() +
+                    ('0' + (now.getMonth() + 1)).slice(-2) +
+                    ('0' + now.getDate()).slice(-2) + '_' +
+                    ('0' + now.getHours()).slice(-2) +
+                    ('0' + now.getMinutes()).slice(-2) +
+                    ('0' + now.getSeconds()).slice(-2);
+        
+                const sessionInfo = rowData.session.replace(/\s+/g, '_');
+                const patientId = rowData.patientId;
+                const date = rowData.date;
+                const filename = `${patientId}_${date}_${sessionInfo}_comparison_${timestamp}.png`;
+        
+                // Convert to data URL and download
+                const dataUrl = exportCanvas.toDataURL('image/png', 1.0);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = dataUrl;
+                downloadLink.download = filename;
+                downloadLink.style.display = 'none';
+        
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+        
+                console.log(`Comparison PNG downloaded: ${filename}`);
+                showExportNotification(`Comparison image exported: ${filename}`, 'success');
+        
+            } catch (error) {
+                console.error('Error exporting comparison PNG:', error);
+                showExportNotification('Error exporting comparison PNG. Check console for details.', 'error');
+            }
+        }
+
         // Helper function to create directory
         /*async function createDirectoryIfNotExists(dirPath) {
             try {
@@ -1948,7 +2032,7 @@
                         exportDicom(rowData);
                         break;
                     case 'export-png':
-                        exportPng(rowData);
+                        exportPngTwoup(rowData);
                         break;
                     case 'left-compare':
                         //Set left image for comparison
